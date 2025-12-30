@@ -267,9 +267,14 @@ func (fsrv *FileServer) browseApplyQueryParams(w http.ResponseWriter, r *http.Re
 
 	switch layoutParam {
 	case "list", "grid", "":
-		listing.Layout = layoutParam
+		// 当没有layout参数时，默认使用grid
+    	if layoutParam == "" {
+        	listing.Layout = "grid"
+    	} else {
+        	listing.Layout = layoutParam
+    	}
 	default:
-		listing.Layout = "list"
+		listing.Layout = "grid"
 	}
 
 	// figure out what to sort by
