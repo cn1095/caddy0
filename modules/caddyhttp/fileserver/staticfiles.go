@@ -715,11 +715,142 @@ func fileHidden(filename string, hide []string) bool {
 // notFound returns a 404 error or, if pass-thru is enabled,
 // it calls the next handler in the chain.
 func (fsrv *FileServer) notFound(w http.ResponseWriter, r *http.Request, next caddyhttp.Handler) error {
-	if fsrv.PassThru {
-		return next.ServeHTTP(w, r)
+	// 设置响应头，返回 200
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+
+	// 获取浏览器语言
+	lang := r.Header.Get("Accept-Language")
+
+	// 默认英文内容
+	title := "⚠️ Warning Page"
+	badge := "FBI"
+	warning := "⚠️ WARNING: Network Activity Detected"
+	desc := `
+Your recent access has triggered advanced security monitoring rules.<br><br>
+`
+
+	// 如果浏览器语言包含中文
+	if strings.Contains(strings.ToLower(lang), "zh") {
+		title = "⚠️ 警告页面"
+		warning = "⚠️ 警告：网络活动已被监控"
+		desc = `
+你的访问行为已触发高级安全规则。<br><br>
+`
 	}
-	return caddyhttp.Error(http.StatusNotFound, nil)
+
+	// 输出页面
+	_, _ = w.Write([]byte(`
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>` + title + `</title>
+<style>
+html, body {
+	margin: 0;
+	padding: 0;
+	width: 100%;
+	height: 100%;
+	background: linear-gradient(120deg, #0f2027, #203a43, #2c5364);
+	background-size: 400% 400%;
+	animation: bgMove 10s ease infinite;
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial;
+	color: #fff;
+	overflow: hidden;
 }
+
+@keyframes bgMove {
+	0% { background-position: 0% 50%; }
+	50% { background-position: 100% 50%; }
+	100% { background-position: 0% 50%; }
+}
+
+.container {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	height: 100%;
+	text-align: center;
+	padding: 20px;
+}
+
+.badge {
+	font-size: 72px;
+	font-weight: 800;
+	letter-spacing: 6px;
+	color: #00eaff;
+	text-shadow: 0 0 25px rgba(0,234,255,0.9);
+	animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+	0% { transform: scale(1); }
+	50% { transform: scale(1.06); }
+	100% { transform: scale(1); }
+}
+
+.warning {
+	margin-top: 30px;
+	font-size: 28px;
+	color: #ff4d4f;
+	text-shadow: 0 0 15px rgba(255,77,79,0.9);
+}
+
+.desc {
+	margin-top: 22px;
+	max-width: 720px;
+	line-height: 1.8;
+	font-size: 18px;
+	color: #e6e6e6;
+	opacity: 0.95;
+}
+
+.footer {
+	position: absolute;
+	bottom: 18px;
+	font-size: 14px;
+	opacity: 0.55;
+}
+
+.scan-line {
+	position: absolute;
+	top: -120%;
+	left: 0;
+	width: 100%;
+	height: 220px;
+	background: linear-gradient(
+		to bottom,
+		transparent,
+		rgba(0,234,255,0.18),
+		transparent
+	);
+	animation: scan 4s linear infinite;
+}
+
+@keyframes scan {
+	0% { top: -120%; }
+	100% { top: 120%; }
+}
+</style>
+</head>
+
+<body>
+<div class="scan-line"></div>
+<div class="container">
+	<div class="badge">` + badge + `</div>
+	<div class="warning">` + warning + `</div>
+	<div class="desc">` + desc + `</div>
+</div>
+</body>
+</html>
+`))
+
+	// 返回 nil，表示请求已处理完成
+	return nil
+}
+
 
 // calculateEtag computes an entity tag using a strong validator
 // without consuming the contents of the file. It requires the
