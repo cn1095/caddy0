@@ -45,6 +45,7 @@ func (fsrv *FileServer) directoryListing(ctx context.Context, fileSystem fs.FS, 
 		Path:         urlPath,
 		CanGoUp:      canGoUp,
 		lastModified: parentModTime,
+		Layout:       "grid", // 设置默认为grid布局 
 	}
 
 	for _, entry := range entries {
