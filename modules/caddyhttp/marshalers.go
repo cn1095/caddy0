@@ -17,6 +17,7 @@ package caddyhttp
 import (
 	"crypto/tls"
 	"net"
+	"net/url"
 	"net/http"
 	"strings"
 
@@ -46,7 +47,11 @@ func (r LoggableHTTPRequest) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	enc.AddString("proto", r.Proto)
 	enc.AddString("method", r.Method)
 	enc.AddString("host", r.Host)
-	enc.AddString("uri", r.RequestURI)
+	if decodedURI, err := url.QueryUnescape(r.RequestURI); err == nil {
+    	enc.AddString("uri", decodedURI)
+	} else {
+    	enc.AddString("uri", r.RequestURI)
+	}
 	enc.AddObject("headers", LoggableHTTPHeader{
 		Header:               r.Header,
 		ShouldLogCredentials: r.ShouldLogCredentials,
@@ -75,6 +80,14 @@ func (h LoggableHTTPHeader) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 		return nil
 	}
 	for key, val := range h.Header {
+		// 对Referer等可能包含URL的头部进行解码
+    	if strings.ToLower(key) == "referer" {
+        	for i, v := range val {
+            	if decoded, err := url.QueryUnescape(v); err == nil {
+                	val[i] = decoded
+            	}
+        	}
+    	}
 		if !h.ShouldLogCredentials {
 			switch strings.ToLower(key) {
 			case "cookie", "set-cookie", "authorization", "proxy-authorization":
